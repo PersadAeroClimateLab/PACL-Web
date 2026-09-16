@@ -77,14 +77,17 @@ if (!canvas || !hero || reduceMotion || belowMobileBreakpoint || noHover) {
 }
 
 function runHero(canvas, hero) {
-  const gl = canvas.getContext('webgl', { alpha: false });
+  // preserveDrawingBuffer: the trail effect works by blending a low-alpha
+  // fade quad over the previous frame instead of clearing — without this,
+  // the spec allows the browser to clear the buffer between frames anyway.
+  const gl = canvas.getContext('webgl', { alpha: false, preserveDrawingBuffer: true });
   if (!gl) {
     // No WebGL (old or locked-down browser) — static hero stands alone.
     window.heroReady = true;
     return;
   }
 
-  const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+  let dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
   const rootStyle = getComputedStyle(document.documentElement);
   const voidRgb = hexToRgb(rootStyle.getPropertyValue('--void').trim() || '#05070C');
   const species = ['--sulfate', '--dust', '--carbon', '--salt']
@@ -114,6 +117,7 @@ function runHero(canvas, hero) {
   }
 
   function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     width = canvas.clientWidth;
     height = canvas.clientHeight;
     canvas.width = width * dpr;
