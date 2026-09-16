@@ -1,13 +1,22 @@
-// Aerosol flow-field hero animation (SPEC.md §5). Canvas 2D: particles
-// advected by 2D simplex noise, tinted from the species palette, wrapping
-// at the edges instead of resetting so there's no visible seam.
+// Aerosol flow-field hero animation (SPEC.md §5). WebGL: particles
+// advected by 2D simplex noise (same algorithm the Canvas 2D version
+// used — cheap on the CPU even at a few thousand points), rendered as
+// additive point sprites via twgl.js for the glow and density a flat
+// Canvas 2D fill/arc loop can't cheaply give. twgl.js is vendored in
+// assets/js/vendor/ (see that file's header for version/license) only
+// to avoid hand-rolling WebGL's program/buffer boilerplate — SPEC.md §5
+// calls raw WebGL "essentially never" worth that cost for a flat field.
+// It attaches `window.twgl`; load it as a classic <script> before this
+// module (see _includes/hero-canvas.html) so it's ready when this runs.
 
-const PARTICLE_COUNT = 120;
+const PARTICLE_COUNT = 2000;
 const NOISE_FREQ = 0.0025;
 const TIME_FREQ = 0.00015;
 const SPEED = 0.35;
 const MAX_DPR = 2;
 const TRAIL_ALPHA = 0.07;
+const POINT_SIZE_MIN = 1.5;
+const POINT_SIZE_MAX = 4;
 
 const canvas = document.getElementById('hero-canvas');
 const hero = canvas ? canvas.closest('.hero') : null;
@@ -26,69 +35,137 @@ if (!canvas || !hero || reduceMotion || belowMobileBreakpoint || noHover) {
   runHero(canvas, hero);
 }
 
+const PARTICLE_VS = `
+  attribute vec2 position;
+  attribute vec3 color;
+  attribute float size;
+  uniform vec2 resolution;
+  uniform float dpr;
+  varying vec3 vColor;
+  void main() {
+    vec2 clip = (position / resolution) * 2.0 - 1.0;
+    gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+    gl_PointSize = size * dpr;
+    vColor = color;
+  }
+`;
+
+const PARTICLE_FS = `
+  precision mediump float;
+  varying vec3 vColor;
+  void main() {
+    float dist = length(gl_PointCoord - vec2(0.5)) * 2.0;
+    float alpha = smoothstep(1.0, 0.0, dist);
+    alpha *= alpha;
+    gl_FragColor = vec4(vColor * alpha, alpha);
+  }
+`;
+
+const FADE_VS = `
+  attribute vec2 position;
+  void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`;
+
+const FADE_FS = `
+  precision mediump float;
+  uniform vec4 color;
+  void main() {
+    gl_FragColor = color;
+  }
+`;
+
 function runHero(canvas, hero) {
-  const ctx = canvas.getContext('2d');
+  const gl = canvas.getContext('webgl', { alpha: false });
+  if (!gl) {
+    // No WebGL (old or locked-down browser) — static hero stands alone.
+    window.heroReady = true;
+    return;
+  }
+
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
   const rootStyle = getComputedStyle(document.documentElement);
-  const voidColor = rootStyle.getPropertyValue('--void').trim() || '#05070C';
+  const voidRgb = hexToRgb(rootStyle.getPropertyValue('--void').trim() || '#05070C');
   const species = ['--sulfate', '--dust', '--carbon', '--salt']
-    .map((name) => rootStyle.getPropertyValue(name).trim());
+    .map((name) => hexToRgb(rootStyle.getPropertyValue(name).trim()));
+
+  const particleProgram = twgl.createProgramInfo(gl, [PARTICLE_VS, PARTICLE_FS]);
+  const fadeProgram = twgl.createProgramInfo(gl, [FADE_VS, FADE_FS]);
+  const fadeBufferInfo = twgl.createBufferInfoFromArrays(gl, {
+    position: { numComponents: 2, data: [-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1] },
+  });
 
   const noise = makeSimplex2();
-  const particles = [];
+  const positions = new Float32Array(PARTICLE_COUNT * 2);
+  const colors = new Float32Array(PARTICLE_COUNT * 3);
+  const sizes = new Float32Array(PARTICLE_COUNT);
   let width = 0;
   let height = 0;
+
+  function spawn(i) {
+    positions[i * 2] = Math.random() * width;
+    positions[i * 2 + 1] = Math.random() * height;
+    const c = species[(Math.random() * species.length) | 0];
+    colors[i * 3] = c[0];
+    colors[i * 3 + 1] = c[1];
+    colors[i * 3 + 2] = c[2];
+    sizes[i] = POINT_SIZE_MIN + Math.random() * (POINT_SIZE_MAX - POINT_SIZE_MIN);
+  }
 
   function resize() {
     width = canvas.clientWidth;
     height = canvas.clientHeight;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = voidColor;
-    ctx.fillRect(0, 0, width, height);
-  }
-
-  function spawn(p) {
-    p.x = Math.random() * width;
-    p.y = Math.random() * height;
-    p.color = species[(Math.random() * species.length) | 0];
-    p.radius = 0.6 + Math.random() * 1.4;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    // Resizing resets the drawing buffer — repaint the void color right
+    // away so there's no black flash before the first trail-quad pass.
+    gl.clearColor(voidRgb[0], voidRgb[1], voidRgb[2], 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
   resize();
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const p = {};
-    spawn(p);
-    particles.push(p);
-  }
+  for (let i = 0; i < PARTICLE_COUNT; i++) spawn(i);
+
+  const particleBufferInfo = twgl.createBufferInfoFromArrays(gl, {
+    position: { numComponents: 2, data: positions, drawType: gl.DYNAMIC_DRAW },
+    color: { numComponents: 3, data: colors },
+    size: { numComponents: 1, data: sizes },
+  });
 
   let running = false;
   let inView = false;
   let t = 0;
 
   function draw() {
-    ctx.globalAlpha = TRAIL_ALPHA;
-    ctx.fillStyle = voidColor;
-    ctx.fillRect(0, 0, width, height);
-    ctx.globalAlpha = 1;
+    gl.enable(gl.BLEND);
 
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      const angle = noise(p.x * NOISE_FREQ, p.y * NOISE_FREQ + t) * Math.PI * 4;
-      p.x += Math.cos(angle) * SPEED;
-      p.y += Math.sin(angle) * SPEED;
+    gl.useProgram(fadeProgram.program);
+    twgl.setBuffersAndAttributes(gl, fadeProgram, fadeBufferInfo);
+    twgl.setUniforms(fadeProgram, { color: [voidRgb[0], voidRgb[1], voidRgb[2], TRAIL_ALPHA] });
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    twgl.drawBufferInfo(gl, fadeBufferInfo);
 
-      if (p.x < 0) p.x += width;
-      else if (p.x > width) p.x -= width;
-      if (p.y < 0) p.y += height;
-      else if (p.y > height) p.y -= height;
-
-      ctx.beginPath();
-      ctx.fillStyle = p.color;
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fill();
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const angle = noise(positions[i * 2] * NOISE_FREQ, positions[i * 2 + 1] * NOISE_FREQ + t) * Math.PI * 4;
+      let x = positions[i * 2] + Math.cos(angle) * SPEED;
+      let y = positions[i * 2 + 1] + Math.sin(angle) * SPEED;
+      if (x < 0) x += width;
+      else if (x > width) x -= width;
+      if (y < 0) y += height;
+      else if (y > height) y -= height;
+      positions[i * 2] = x;
+      positions[i * 2 + 1] = y;
     }
+    twgl.setAttribInfoBufferFromArray(gl, particleBufferInfo.attribs.position, positions);
+
+    gl.useProgram(particleProgram.program);
+    twgl.setBuffersAndAttributes(gl, particleProgram, particleBufferInfo);
+    twgl.setUniforms(particleProgram, { resolution: [width, height], dpr });
+    gl.blendFunc(gl.ONE, gl.ONE);
+    twgl.drawBufferInfo(gl, particleBufferInfo, gl.POINTS);
+
     t += TIME_FREQ;
   }
 
@@ -126,6 +203,11 @@ function runHero(canvas, hero) {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(resize, 150);
   });
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
 // Compact 2D simplex noise (Gustavson's algorithm). No library — this is
