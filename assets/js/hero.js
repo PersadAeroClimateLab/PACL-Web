@@ -27,14 +27,6 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 const belowMobileBreakpoint = window.matchMedia('(max-width: 40rem)').matches;
 const noHover = window.matchMedia('(hover: none)').matches;
 
-if (!canvas || !hero || reduceMotion || belowMobileBreakpoint || noHover) {
-  // Static hero (CSS --void background, real DOM content) is already
-  // complete on its own — nothing more to wait for.
-  window.heroReady = true;
-} else {
-  runHero(canvas, hero);
-}
-
 const PARTICLE_VS = `
   attribute vec2 position;
   attribute vec3 color;
@@ -75,6 +67,14 @@ const FADE_FS = `
     gl_FragColor = color;
   }
 `;
+
+if (!canvas || !hero || reduceMotion || belowMobileBreakpoint || noHover) {
+  // Static hero (CSS --void background, real DOM content) is already
+  // complete on its own — nothing more to wait for.
+  window.heroReady = true;
+} else {
+  runHero(canvas, hero);
+}
 
 function runHero(canvas, hero) {
   const gl = canvas.getContext('webgl', { alpha: false });
