@@ -16,6 +16,7 @@
   --hairline: #E3E1D9;
   --max-width: 72rem;
   --gutter: 1.25rem;
+  --footer-height: 3.25rem;
 }
 
 * {
@@ -24,6 +25,7 @@
 
 body {
   margin: 0;
+  padding-bottom: var(--footer-height);
   background: var(--paper);
   color: var(--ink);
   font-family: Inter, system-ui, sans-serif;
@@ -100,12 +102,23 @@ img {
 /* Footer */
 
 .site-footer {
-  max-width: var(--max-width);
-  margin: 4rem auto 0;
-  padding: 1.5rem var(--gutter);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-height);
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 var(--gutter);
+  background: var(--paper);
   border-top: 1px solid var(--hairline);
   color: var(--quiet);
   font-size: 0.875rem;
+}
+
+.site-footer p {
+  margin: 0;
 }
 
 /* Interior pages */
@@ -125,10 +138,8 @@ img {
 /* Home hero */
 
 .hero {
-  background: var(--void);
-  color: var(--paper);
+  color: var(--ink);
   padding: 3rem var(--gutter);
-  position: relative;
   display: grid;
   gap: 2.5rem;
 }
@@ -139,7 +150,7 @@ img {
 }
 
 .hero__content p {
-  color: #D8DAE0;
+  color: var(--quiet);
   max-width: 60ch;
 }
 
@@ -150,8 +161,13 @@ img {
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
 }
 
+/* The H1/lede area stays transparent over the map — large, heavy serif
+   text reads fine on its own — but the cards' smaller text still needs
+   an opaque backdrop, so each card carries its own instead of the whole
+   .hero__content block being boxed. */
 .hero__card {
-  border: 1px solid #23262E;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
   border-radius: 4px;
   padding: 1.25rem;
 }
@@ -163,13 +179,14 @@ img {
 
 .hero__card p {
   margin: 0;
-  color: #B7BAC2;
+  color: var(--quiet);
   font-size: 0.9375rem;
 }
 
 .hero__news {
-  border-top: 1px solid #23262E;
-  padding-top: 1.5rem;
+  background: var(--paper);
+  padding: 2rem;
+  border-radius: 8px;
 }
 
 .hero__news h2 {
@@ -177,20 +194,18 @@ img {
   margin: 0 0 1rem;
 }
 
+/* Fixed to the viewport rather than the .hero box, so the map fills the
+   whole window (and stays put) regardless of how tall the hero content
+   is — a background, not a hero-sized panel. z-index: -1 sinks it below
+   every normal-flow element on the page (nav, hero text, the rest of the
+   page past the hero) without those needing an explicit z-index of their
+   own to sit above it. */
 .hero-canvas-wrap {
-  position: absolute;
+  position: fixed;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
-}
-
-/* Positioned children paint above static ones regardless of source order,
-   so the canvas (position: absolute) needs these lifted explicitly or it
-   covers the text. */
-.hero__content, .hero__news {
-  position: relative;
-  z-index: 1;
+  z-index: -1;
 }
 
 .hero-canvas-wrap canvas {
@@ -203,13 +218,6 @@ img {
     grid-template-columns: 2fr 1fr;
     align-items: start;
     padding: 4.5rem var(--gutter);
-  }
-
-  .hero__news {
-    border-top: none;
-    border-left: 1px solid #23262E;
-    padding-top: 0;
-    padding-left: 2rem;
   }
 }
 
@@ -226,20 +234,12 @@ img {
   border-top: 1px solid var(--hairline);
 }
 
-.hero .news-item {
-  border-top-color: #23262E;
-}
-
 .news-item__date {
   margin: 0 0 0.25rem;
   color: var(--teal);
   font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-}
-
-.hero .news-item__date {
-  color: #8FA6C9;
 }
 
 .news-item__text {

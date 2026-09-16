@@ -201,6 +201,15 @@ def main() -> int:
     parser.add_argument("--eval", dest="script", help="run this JS once before settling")
     parser.add_argument("--scale", type=float, default=1.0, help="device pixel ratio")
     parser.add_argument("--quiet", action="store_true", help="do not print the console")
+    parser.add_argument(
+        "--frames", type=int, default=1, help="capture this many screenshots in one run"
+    )
+    parser.add_argument(
+        "--frame-interval",
+        type=float,
+        default=1.0,
+        help="seconds of real time between frames when --frames > 1",
+    )
     args = parser.parse_args()
 
     width, _, height = args.size.partition("x")
@@ -296,17 +305,21 @@ def main() -> int:
 
         cdp.drain(args.settle)
 
-        shot = cdp.call(
-            "Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False}
-        )
-        data = base64.b64decode(shot["data"])
-        with open(args.out, "wb") as handle:
-            handle.write(data)
+        for i in range(args.frames):
+            if i > 0:
+                cdp.drain(args.frame_interval)
+            shot = cdp.call(
+                "Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False}
+            )
+            data = base64.b64decode(shot["data"])
+            out_path = frame_path(args.out, i, args.frames)
+            with open(out_path, "wb") as handle:
+                handle.write(data)
+            print(f"shot: {out_path} {len(data)} bytes {width}x{height} @{args.scale}x")
 
         if not args.quiet:
             for line in console_lines(cdp.events):
                 print(line)
-        print(f"shot: {args.out} {len(data)} bytes {width}x{height} @{args.scale}x")
         cdp.ws.close()
         return 0
     finally:
@@ -316,6 +329,13 @@ def main() -> int:
         except subprocess.TimeoutExpired:
             process.kill()
         shutil.rmtree(profile, ignore_errors=True)
+
+
+def frame_path(out: str, index: int, total: int) -> str:
+    if total <= 1:
+        return out
+    stem, ext = os.path.splitext(out)
+    return f"{stem}-{index}{ext}"
 
 
 def fail(process, profile, message):
