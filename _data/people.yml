@@ -1,0 +1,22 @@
+# Real roster not yet ported (source HTML/PROJECT_SUMMARY.md unavailable at
+# scaffold time) — left empty rather than inventing names. Shape to follow
+# once real content lands:
+#
+# current:
+#   - name: Jane Doe
+#     role: Ph.D. Student
+#     pi: true                 # PI entry only; renders larger, above the grid
+#     photo: jane-doe.jpg       # optional; template handles a missing photo
+#     details:
+#       - Degree expected Spring 2027
+#     cv: https://...           # PI only
+# past:
+#   - name: John Smith
+#     role: M.S. Student
+#     details:
+#       - B.S. in Atmospheric Science, UT Austin, 2022
+#     now: Postdoc, Example University
+#     project: Example past project
+
+current: []
+past: []

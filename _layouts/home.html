@@ -1,0 +1,30 @@
+---
+layout: default
+---
+<main>
+  <section class="hero">
+    {% include hero-canvas.html %}
+    <div class="hero__content">
+      <h1>{{ page.title }}</h1>
+      {{ content }}
+      <div class="hero__cards">
+        {% for card in page.questions %}
+          <div class="hero__card">
+            <h2>{{ card.title }}</h2>
+            <p>{{ card.body }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <aside class="hero__news" aria-label="Lab news">
+      <h2>Lab News</h2>
+      <ul class="news-list">
+        {% assign recent_news = site.data.news | sort: "date" | reverse | slice: 0, 10 %}
+        {% for item in recent_news %}
+          {% include news-item.html item=item %}
+        {% endfor %}
+      </ul>
+      <a href="{{ '/news/' | relative_url }}">All news</a>
+    </aside>
+  </section>
+</main>

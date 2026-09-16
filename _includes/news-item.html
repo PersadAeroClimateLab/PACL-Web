@@ -1,0 +1,8 @@
+{% assign item = include.item %}
+<li class="news-item">
+  <p class="news-item__date">{{ item.date | date: "%b %Y" }}</p>
+  <div class="news-item__text">{{ item.text | markdownify }}</div>
+  {% if item.link %}
+    <a class="news-item__link" href="{{ item.link }}">{{ item.link_text | default: "Read more" }}</a>
+  {% endif %}
+</li>

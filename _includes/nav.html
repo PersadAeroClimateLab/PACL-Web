@@ -1,0 +1,16 @@
+<nav class="site-nav">
+  <a class="site-nav__brand" href="{{ '/' | relative_url }}">Persad Aero-Climate Lab</a>
+  <ul class="site-nav__links">
+    {% for item in site.data.nav %}
+      {% assign is_active = false %}
+      {% if page.url == item.url or (item.url != "/" and page.url contains item.url) %}
+        {% assign is_active = true %}
+      {% endif %}
+      <li>
+        <a href="{{ item.url | relative_url }}"{% if is_active %} class="is-active" aria-current="page"{% endif %}>
+          {{ item.label }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>

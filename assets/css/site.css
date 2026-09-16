@@ -1,0 +1,30 @@
+:root {
+  --ink: #0B1D33;
+  --void: #05070C;
+  --paper: #FAFAF7;
+  --link: #4A6FA5;
+  --quiet: #6B7280;
+  --teal: #2E6B6B;
+
+  /* Species accents — placeholder hues, to be sampled from the reference
+     image and desaturated for use against --paper (see SPEC.md §5). */
+  --sulfate: #6FA37A;
+  --dust: #8A6FA3;
+  --carbon: #C4603A;
+  --salt: #C9CDD3;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: "Source Serif 4", Georgia, serif;
+}
+
+a {
+  color: var(--link);
+}

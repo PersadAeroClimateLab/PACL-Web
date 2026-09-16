@@ -1,0 +1,22 @@
+{% assign person = include.person %}
+<div class="person{% if person.pi %} person--pi{% endif %}">
+  {% if person.photo %}
+    <img class="person__photo" src="{{ '/assets/img/people/' | append: person.photo | relative_url }}" alt="Photo of {{ person.name }}">
+  {% else %}
+    <div class="person__photo person__photo--placeholder" aria-hidden="true"></div>
+  {% endif %}
+  <div class="person__body">
+    <p class="person__name">{{ person.name }}</p>
+    <p class="person__role">{{ person.role }}</p>
+    {% if person.details %}
+      <ul class="person__details">
+        {% for line in person.details %}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if person.now %}<p class="person__now">Now: {{ person.now }}</p>{% endif %}
+    {% if person.project %}<p class="person__project">{{ person.project }}</p>{% endif %}
+    {% if person.cv %}<p class="person__cv"><a href="{{ person.cv }}">CV</a></p>{% endif %}
+  </div>
+</div>

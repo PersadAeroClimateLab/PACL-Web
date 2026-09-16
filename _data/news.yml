@@ -1,0 +1,16 @@
+# Newest first. `text` runs through Markdown, so *italics* and [links](url)
+# work without writing HTML. `link`/`link_text` are optional.
+#
+# The three entries below are SAMPLE DATA standing in for real news until the
+# PI supplies it — replace or remove them, don't build on top of them.
+
+- date: 2026-07-15
+  text: "Sample item — *replace with real lab news*: a paper accepted to a journal."
+  link: https://example.org
+  link_text: Read it
+
+- date: 2026-05-02
+  text: "Sample item — *replace with real lab news*: a talk given at a conference."
+
+- date: 2026-01-20
+  text: "Sample item — *replace with real lab news*: a new lab member joins."

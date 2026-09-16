@@ -1,0 +1,16 @@
+- label: Home
+  url: /
+- label: People
+  url: /people/
+- label: Research
+  url: /research/
+- label: Teaching
+  url: /teaching/
+- label: News
+  url: /news/
+- label: Resources
+  url: /resources/
+- label: Openings
+  url: /openings/
+- label: Contact
+  url: /contact/

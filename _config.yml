@@ -1,0 +1,22 @@
+title: Persad Aero-Climate Lab
+description: Aerosol-climate interactions research at UT Austin.
+url: "https://ggpersad.com"
+baseurl: ""
+
+markdown: kramdown
+permalink: pretty
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+exclude:
+  - Dockerfile
+  - compose.yml
+  - docs/
+  - tools/
+  - SPEC.md
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
