@@ -1,5 +1,5 @@
 {% assign person = include.person %}
-<div class="person{% if person.pi %} person--pi{% endif %}">
+<div class="person">
   {% if person.photo %}
     <img class="person__photo" src="{{ '/assets/img/people/' | append: person.photo | relative_url }}" alt="Photo of {{ person.name }}">
   {% else %}
