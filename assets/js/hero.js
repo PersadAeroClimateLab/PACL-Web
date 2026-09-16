@@ -252,7 +252,16 @@ function runHero(canvas, hero) {
         const lat = 90 - positions[i * 2 + 1] * 180;
         const u = zonalU(lat) * ZONAL_SPEED;
         const wobble = noise(positions[i * 2] * NOISE_FREQ, positions[i * 2 + 1] * NOISE_FREQ + t);
-        const v = wobble * CORIOLIS_STRENGTH * Math.sign(lat);
+        // Math.sign(lat) used to flip hard at lat=0: since wobble is a
+        // spatially-smooth field (not hemisphere-aware), the same local
+        // value would push a particle toward the equator from one side and
+        // then snap to pushing it right back the instant it crossed —
+        // particles bounced in place instead of drifting through. Fading
+        // the hemisphere sense smoothly to 0 at the equator removes the
+        // snap: the meridional term just vanishes at the crossing instead
+        // of reversing.
+        const hemisphere = smoothstep(-10, 10, lat) * 2 - 1;
+        const v = wobble * CORIOLIS_STRENGTH * hemisphere;
         positions[i * 2] += u;
         positions[i * 2 + 1] += v;
       }
