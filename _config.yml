@@ -1,7 +1,7 @@
 title: Persad Aero-Climate Lab
 description: Aerosol-climate interactions research at UT Austin.
-url: "https://ggpersad.com"
-baseurl: ""
+url: "https://persadaeroclimatelab.github.io"
+baseurl: "/PACL-Web"
 
 markdown: kramdown
 permalink: pretty
